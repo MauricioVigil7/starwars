@@ -1,0 +1,750 @@
+swagger: "2.0"
+info:
+  description: "Permite generar y verificar el access token con JWT, guarda el acceso token en la base  DynamoDB datos Access token"
+  version: "v1.0"
+  title: "Servicio Cloud para generar y verificar el access token con JWT"
+  contact: 
+    email: "soporte@mapfre.com.pe"    
+  license: 
+      name: "Apache 2.0"
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"    
+
+schemes:
+- "https"
+x-amazon-apigateway-request-validators:
+  body-validate:
+    validateRequestBody: true
+    validateRequestParameters: false
+
+x-amazon-apigateway-gateway-responses:
+  BAD_REQUEST_BODY:
+    statusCode: 400
+    responseTemplates:
+      application/json: " \n
+          { \n
+            \"exito\": false,
+            \"mensaje\": \"Error en el body enviado\",
+            \"data\": [],
+            \"errores\": [
+              {
+                \"codigo\": \"2\",
+                \"mensaje\": \"Error de validación de datos.  campo: $context.error.validationErrorString \"
+              }
+            ]            
+          }" 
+  ACCESS_DENIED:
+    statusCode: 403
+    responseTemplates:
+      application/json: " \n
+          { \n
+            \"exito\": false,
+            \"mensaje\": \"Error en la operación\",
+            \"data\": [],
+            \"errores\": [
+              {
+                \"codigo\": \"1\",
+                \"mensaje\": \"Error de validación de token, u acceso\"
+              }
+            ]
+          }"   
+  UNAUTHORIZED:
+    statusCode: 401
+    responseTemplates:
+      application/json: " \n
+          { \n
+            \"exito\": false,
+            \"mensaje\": \"Error en el autorización\",
+            \"data\": [],
+            \"errores\":$context.error.messageString
+          }"       
+x-amazon-apigateway-request-validator: body-validate          
+paths:
+  /:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+        
+  /InspRiesgoAccessTokenJWT:
+    options:
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+  /InspRiesgoAccessTokenJWT/token:
+    options:
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+    post:
+      tags: 
+        - insp-riesgo-access-token-cloud-service-handler      
+      summary: "Permite generar token"
+      operationId: "token"
+      description: "Permite generar \n"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      x-amazon-apigateway-request-validator: body-validate
+      parameters:
+        - name: token
+          in: body
+          description: "Datos del Token"
+          required: true
+          schema:
+            $ref: "#/definitions/token"
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: "InspRiesgoAccessTokenJWTRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoAccessTokenJWTFunction.Arn}/invocations"
+        responses:
+          "default":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": $body.exito, \n
+                  \"mensaje\": \"$body.mensaje\", \n
+                  \"data\": [
+                        {
+                          \"accessToken\":  \"$body.data.accessToken\" \n
+                        }
+                     ], 
+                  \"errores\": []
+                }
+              "
+          "UNAUTH.*":
+            statusCode: "401"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error al generar token\", \n
+                  \"data\": [], 
+                  \"errores\": [{ 
+                    \"codigo\": \"1\",
+                    \"mensaje\": \"No autorizado\"
+                  }]
+                }
+              "
+          "BAD.*":
+            statusCode: "400"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"No encontrado\", \n
+                  \"data\": [], 
+                  \"errores\": [{ 
+                    \"codigo\": \"2\",
+                    \"mensaje\": \"No encontrado\"
+                  }]
+                }
+              "
+          "INT.*":
+            statusCode: "500"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Interno\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"-1\",
+                    \"mensaje\": \"Error Interno\"
+                  }]
+                }
+              "                  
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+             \"action\": \"token\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } \n
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"            
+        401:
+          description: "Error de authenticación"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"              
+        500:
+          description: "Error en el servidor"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"              
+  /InspRiesgoAccessTokenJWT/check-token:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+        400:
+          description: "400 bad request"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+        401:
+          description: "401 Unauthorized"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+    post:
+      tags: 
+        - inspeccion-riesgo-RefreshToken-cloud-service-handler      
+      summary: "Permite verficiar el access token mediante la operacion check-token"
+      operationId: "check-token"
+      description: "Permite validar token \n" 
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      x-amazon-apigateway-request-validator: body-validate        
+      parameters:
+        - name: accessToken
+          in: body
+          description: "parametro accessToken"
+          required: true
+          schema:
+            $ref: "#/definitions/checkToken"
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: "InspRiesgoAccessTokenJWTRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoAccessTokenJWTFunction.Arn}/invocations"
+        responses:              
+          "default":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": $body.exito, \n
+                  \"mensaje\": \"$body.mensaje\", \n
+                  \"data\": [
+                      {
+                      \"codigo\": \"$body.data.codigo\",\n
+                      \"mensaje\": \"$body.data.mensaje\" \n
+                      }
+                    ], \n
+                  \"errores\": []
+                }
+                "                                 
+          "BAD.*":
+            statusCode: "400"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Token\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"1\",
+                    \"mensaje\": \"No se reconoce token\"
+                  }]
+                }
+              "           
+          "INT.*":
+            statusCode: "500"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Interno\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"-1\",
+                    \"mensaje\": \"Error Interno\"
+                  }]
+                }
+              "                 
+          "UNAUTH.*":
+            statusCode: "401"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"No autorizado\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"2\",
+                    \"mensaje\": \"Token expirado\"
+                  }]
+                }
+              "                                          
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"check-token\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } \n
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"                   
+        401:
+          description: "Error de authenticación"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"              
+        500:
+          description: "Error en el servidor"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"              
+
+  /InspRiesgoAccessTokenJWT/refresh-token:
+      options:
+        consumes:
+        - "application/json"
+        produces:
+        - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+      post:
+        tags: 
+          - insp-riesgo-access-refresh-token-cloud-service-handler      
+        summary: "Permite generar check-token"
+        operationId: "refresh-token"
+        description: "Permite validar token \n"
+        consumes:
+          - "application/json"
+        produces:
+          - "application/json"
+        x-amazon-apigateway-request-validator: body-validate        
+        parameters:
+          - name: accessToken
+            in: body
+            description: "accessToken"
+            required: true
+            schema:
+              $ref: "#/definitions/refreshToken"
+        x-amazon-apigateway-integration:
+          credentials: 
+            Fn::GetAtt: "InspRiesgoAccessTokenJWTRole.Arn"
+          uri:
+            Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoAccessTokenJWTFunction.Arn}/invocations"
+          responses:
+            "default":
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+              responseTemplates:
+                application/json: " \n
+                  #set ($root=$util.parseJson($input.json('$'))) \n
+                  #set ($body = $util.parseJson($root.body)) \n
+                  { \n
+                    \"exito\": $body.exito, \n
+                    \"mensaje\": \"$body.mensaje\", \n
+                    \"data\": [{
+                        \"accessToken\": \"$body.data.accessToken\" \n
+                    }],\n
+                    \"errores\": [] \n
+                  }
+                "
+            "INT.*":
+              statusCode: "500"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Origin : "'*'"
+              responseTemplates:
+                application/json: " \n
+                  #set ($root=$util.parseJson($input.json('$'))) \n
+                  #set ($body = $util.parseJson($root.body)) \n
+                  { \n
+                    \"exito\": false, \n
+                    \"mensaje\": \"Error Interno\", \n
+                    \"data\": [], \n
+                    \"errores\":[{
+                      \"codigo\": \"-1\",\n
+                      \"mensaje\": \"Error Interno\" \n
+                    }]
+                  }
+                "                 
+            "UNAUTH.*":
+              statusCode: "401"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Origin : "'*'"
+              responseTemplates:
+                application/json: " \n
+                  #set ($root=$util.parseJson($input.json('$'))) \n
+                  #set ($body = $util.parseJson($root.body)) \n
+                  { \n
+                    \"exito\": false, \n
+                    \"mensaje\": \"No autorizado\", \n
+                    \"data\": [], \n
+                    \"errores\":[{
+                      \"codigo\": \"2\",
+                      \"mensaje\": \"Token expirado\"
+                    }]
+                  }
+                "
+            "BAD.*":
+              statusCode: "400"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Origin : "'*'"
+              responseTemplates:
+                application/json: " \n
+                  #set ($root=$util.parseJson($input.json('$'))) \n
+                  #set ($body = $util.parseJson($root.body)) \n
+                  { \n
+                    \"exito\": false, \n
+                    \"mensaje\": \"Bad Request\", \n
+                    \"data\": [],
+                    \"errores\":[{
+                      \"codigo\": \"1\", \n
+                      \"mensaje\": \"No se reconoce\" \n
+                    }]
+                  }
+                "
+            "ACCEP.*":
+              statusCode: "500"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Origin : "'*'"
+              responseTemplates:
+                application/json: " \n
+                  #set ($root=$util.parseJson($input.json('$'))) \n
+                  #set ($body = $util.parseJson($root.body)) \n
+                  { \n
+                    \"exito\": false, \n
+                    \"mensaje\": \"Aceptado\", \n
+                    \"data\": [],
+                    \"errores\":[{
+                      \"codigo\": \"4\", \n
+                      \"mensaje\": \"Token no ha expirado\" \n
+                    }]
+                  }
+                "                                               
+          passthroughBehavior: "when_no_templates"
+          httpMethod: "POST"
+          requestTemplates:
+            application/json: " \n
+            #set($allParams = $input.params()) \n
+            #set($inputRoot = $input.json('$')) \n
+            {
+                \"action\": \"refresh-token\", \n
+                \"params\" : { \n
+                  #foreach($type in $allParams.keySet()) \n
+                  #set($params = $allParams.get($type)) \n
+                  \"$type\" : { \n
+                    #foreach($paramName in $params.keySet()) \n
+                    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                    #if($foreach.hasNext),#end \n
+                    #end \n
+                  } \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                }, \n
+                \"data\": $inputRoot \n
+              }"
+          contentHandling: "CONVERT_TO_TEXT"
+          type: "aws"
+        responses:
+          200:
+            description: "Operación exitosa"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"                     
+          401:
+            description: "Error de authenticación"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"                
+          500:
+            description: "Error en el servidor"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"                
+definitions:
+  token:
+      type: object
+      required:
+        - password
+      properties:
+        email:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+
+  checkToken:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+
+  refreshToken:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+
+  Empty:
+    type: "object"
+    title: "Empty Schema"
+

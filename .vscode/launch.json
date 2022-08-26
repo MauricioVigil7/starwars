@@ -1,0 +1,40 @@
+{
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "InspRiesgoListaSolicitud:handler.listar (nodejs14.x)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/Functions/InspRiesgoListaSolicitud",
+                "lambdaHandler": "handler.listar"
+            },
+            "lambda": {
+                "runtime": "nodejs14.x",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "API InspRiesgoListaSolicitud:FuncionInspRiesgoListaSolicitud",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "${workspaceFolder}/Functions/InspRiesgoListaSolicitud/serverless.yaml",
+                "logicalId": "FuncionInspRiesgoListaSolicitud"
+            },
+            "api": {
+                "path": "/InspListaSolicitud/{correoInspector}/{claveTramite}",
+                "httpMethod": "GET",
+                "payload": {
+                    "json": {
+                        "email": "mauvigil@gmail.com",
+                        "claveTramite": "000123456999"
+                    }
+                },
+                "environmentVariables": {}
+            }
+        }
+    ]
+}

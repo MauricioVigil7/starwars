@@ -1,0 +1,84 @@
+{
+    "Comment": "Workflow Registro Solicitud",
+    "StartAt": "Cargar Data Solicitud",
+    "States": {
+        "Cargar Data Solicitud": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_DATA_SOLICITUD}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "States.TaskFailed"
+                    ],
+                    "IntervalSeconds": 15,
+                    "MaxAttempts": 3,
+                    "BackoffRate": 1.5
+                }
+            ],
+            "ResultPath": null,
+            "Next": "Inspeccion Solicitud"
+        },
+        "Inspeccion Solicitud": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_INSPECCION_SOLICITUD}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "States.TaskFailed"
+                    ],
+                    "IntervalSeconds": 300,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 1.5
+                }
+            ],
+            "Catch": [
+                {
+                    "ErrorEquals": [ "States.ALL" ],
+                    "ResultPath": "$.error",
+                    "Next": "Notificar Error"
+                }
+            ],
+            "ResultPath": null,
+            "Next": "Notificar Exito"
+        },
+        "Notificar Exito": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_NOTIFICAR}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite",
+                    "function": "RegistroSolicitud",
+                    "exito": true
+                }
+            },
+            "End": true
+        },
+        "Notificar Error": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_NOTIFICAR}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite",
+                    "function": "RegistroSolicitud",
+                    "exito": false,
+                    "error.$": "$.error"
+                }
+            },
+            "End": true
+        }
+    }
+}

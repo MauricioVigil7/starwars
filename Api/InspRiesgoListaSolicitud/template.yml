@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Valor del entorno
+    Default: dev
+  LambdaToken:
+    Type: String
+    Description: ARN de la Lambda del token
+    Default: "abc"
+
+Resources:
+  InspRiesgoListaSolicitudApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Join
+        - ""
+        - - InspRiesgoListaSolicitud
+          - "-"
+          - !Ref Environment
+      StageName: !Ref Environment
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ../../Api/InspRiesgoListaSolicitud/definitions.yml
+  
+  InspRiesgoListaSolicitudRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - ""
+        - - InspRiesgoListaSolicitudRole
+          - !Ref Environment
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - "apigateway.amazonaws.com"
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "Lambda"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+        - PolicyName: DynamoCRUD
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: '*'
+        - PolicyName: CWL
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                  - logs:PutDestination
+                  - logs:PutLogEvents
+                  - logs:PutQueryDefinition
+                  - logs:UpdateLogDelivery
+                Resource: '*'   
+  InspRiesgoListaSolicitudFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - ""
+        - - InspRiesgoListaSolicitud
+          - "-"
+          - !Ref Environment
+      Description: Funcion para Listar Solicitud
+      CodeUri: ../../Functions/InspRiesgoListaSolicitud/
+      Handler: handler.listar
+      Runtime: nodejs14.x
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      Role: !GetAtt InspRiesgoListaSolicitudRole.Arn
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+          COD_POR_INSPECCIONAR: '01'
+          DATAPARAMETRO_TABLE: DataParametro
+          GRUPO_ESTADO: CKF
+          IND_REG_ACTUAL: '1'
+          INSPECCIONES_TABLE: Inspeccion
+          TOKEN_VALIDATE_API_HOST: 2v8b73crjf.execute-api.us-east-1.amazonaws.com
+          TOKEN_VALIDATE_API_PATH: /default/InspRiesgoAccessTokenJWT/check-token
+
+Outputs:
+  InspRiesgoListaSolicitudRole:
+    Description: Arn  de Role
+    Value: !GetAtt InspRiesgoListaSolicitudRole.Arn
+
+  InspRiesgoListaSolicitudFunction:
+    Description: Arn de la Funcion
+    Value: !GetAtt InspRiesgoListaSolicitudFunction.Arn
+
+  InspRiesgoListaSolicitudApi:
+    Description: Arn  de la API
+    Value: !Ref InspRiesgoListaSolicitudApi.Arn

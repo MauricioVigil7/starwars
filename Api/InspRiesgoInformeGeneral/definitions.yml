@@ -1,0 +1,906 @@
+swagger: "2.0"
+info:
+  description: "Permite el registro de informe de inspección de riesgo de Informe General"
+  version: "v1.0"
+  title: "Servicio Cloud para Registro Informe de Inspección"
+  contact: 
+    email: "analista@mapfre.com"    
+  license: 
+      name: "Apache 2.0"
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"    
+
+schemes:
+- "https"
+
+securityDefinitions:
+   autorizador:
+     type: "apiKey"
+     name: "Authorization"
+     in: "header"
+     x-amazon-apigateway-authtype: "custom"
+     x-amazon-apigateway-authorizer:
+       authorizerUri:
+         Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaToken}/invocations"
+       authorizerCredentials:
+         Fn::GetAtt: "InspRiesgoInformeGeneralRole.Arn"
+       authorizerResultTtlInSeconds: 300
+       type: "token"
+
+paths:
+  /:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+  /InspRiesgoInformeGeneral:
+    options:
+        consumes:
+          - "application/json"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+  /InspRiesgoInformeGeneral/in/{paso}:
+    options:
+        consumes:
+          - "application/json"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+    post:
+      tags: 
+        - insp-riesgo-informe-general-cloud-service-handler      
+      summary: "Registrar datos del informe general de inspeccion de riesgos"
+      operationId: "registrarPaso4"
+      description: "Permite agregar los datos de informe general de inspección de riesgo del paso 4\n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: paso
+          in: path
+          description: "Información del informe general"
+          required: true
+          type: string
+        - name: inspeccion
+          in: body
+          description: "Información de la Inspección a registrar"
+          required: true
+          schema:
+            $ref: "#/definitions/Inspeccion"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoInformeGeneralRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoInformeGeneralFunction.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": $body.exito, \n
+                  \"mensaje\": \"$body.mensaje\", \n
+                  \"data\": [
+                        {
+                          \"codigo\":  \"$body.data.codigo\", \n
+                          \"mensaje\":  \"$body.data.mensaje\" \n
+                        }
+                     ], 
+                  \"errores\": []
+                }
+              "               
+          "BAD.*":
+            statusCode: "400"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Token\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"1\",
+                    \"mensaje\": \"No se reconoce token\"
+                  }]
+                }
+              "           
+          "INT.*":
+            statusCode: "500"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Interno\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"-1\",
+                    \"mensaje\": \"Error Interno\"
+                  }]
+                }
+              "                                
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"insertPaso\", \n
+              \"params\" : { \n
+                  #foreach($type in $allParams.keySet()) \n
+                  #set($params = $allParams.get($type)) \n
+                    \"$type\" : { \n
+                      #foreach($paramName in $params.keySet()) \n
+                      \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                      #if($foreach.hasNext),#end \n
+                      #end \n
+                    } \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+  /InspRiesgoInformeGeneral/up/{paso}:
+    options:
+        consumes:
+          - "application/json"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'PUT,GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+    put:
+      tags: 
+        - auto-inspeccion-cloud-service-handler      
+      summary: "actualizar datos del informe general de inspeccion de riesgos"
+      operationId: "updatePaso4"
+      description: "Permite actualizar los datos de informe de inspección de riesgo del paso 4\n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: paso
+          in: path
+          description: "Información de la Inspección a registrar"
+          required: true
+          type: string
+        - name: inspeccion
+          in: body
+          description: "Información de la Inspección a registrar"
+          #required: true
+          schema:
+            $ref: "#/definitions/Inspeccion"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoInformeGeneralRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoInformeGeneralFunction.Arn}/invocations"
+        responses:
+          "default":
+            statusCode: "200"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": $body.exito, \n
+                  \"mensaje\": \"$body.mensaje\", \n
+                  \"data\": [
+                        {
+                          \"codigo\":  \"$body.data.codigo\", \n
+                          \"mensaje\":  \"$body.data.mensaje\" \n
+                        }
+                     ], 
+                  \"errores\": []
+                }
+                "             
+          "BAD.*":
+            statusCode: "400"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"No encontrado\", \n
+                  \"data\": [], 
+                  \"errores\": [{ 
+                    \"codigo\": \"2\",
+                    \"mensaje\": \"No encontrado\"
+                  }]
+                }
+              "
+          "INT.*":
+            statusCode: "500"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Interno\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"-1\",
+                    \"mensaje\": \"Error Interno\"
+                  }]
+                }
+              "                  
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"updatePaso\", \n
+              \"params\" : { \n
+                  #foreach($type in $allParams.keySet()) \n
+                  #set($params = $allParams.get($type)) \n
+                  \"$type\" : { \n
+                      #foreach($paramName in $params.keySet()) \n
+                      \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                      #if($foreach.hasNext),#end \n
+                      #end \n
+                  } \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+  /InspRiesgoInformeGeneral/gt/{paso}/{claveTramite}/{email}:
+    options:
+        consumes:
+          - "application/json"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+    get:
+      tags: 
+        - auto-inspeccion-cloud-service-handler      
+      summary: "permite listar los datos del informe general de inspección de riesgos del paso"
+      operationId: "getPaso"
+      description: "permite listar los datos del informe geeral de inspección de riesgos del paso\n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: paso
+          in: path
+          description: "Información de la Inspección a registrar"
+          required: true
+          type: string
+        - name: claveTramite
+          in: path
+          description: "Numero del trámite"
+          required: true
+          type: string
+        - name: email
+          in: path
+          description: "email del inspector"
+          required: true
+          type: string
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoInformeGeneralRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoInformeGeneralFunction.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+           application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"getPaso\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } \n
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+definitions:
+  Inspeccion:
+    type: object
+    required:
+    - claveTramite
+    - codTipoTramite
+    - email
+    - fechaRegistro
+    properties:
+      claveTramite:
+        type: string
+      codTipoTramite:
+        type: string
+      email:
+        type: string
+      fechaRegistro:
+        type: string 
+      propuestasGarantia:
+        type: string
+      codEstadoTramite:
+        type: string  
+      observacion: 
+        type: string  
+      datosNivelRiesgo:
+        $ref: "#/definitions/datosNivelRiesgo"
+      listArchivo:
+        $ref: "#/definitions/Archivo"
+#       listArchivo.archivo:
+#         $ref: "#/definitions/Archivo"
+      datosGenerales:
+        $ref: "#/definitions/datosGenerales"
+      informacionSBS:
+        $ref: "#/definitions/informacionSBS"
+      valoresDeclarados:
+        $ref: "#/definitions/valoresDeclarados"
+      evalRiesgoPerdida:
+        $ref: "#/definitions/evalRiesgoPerdida"
+#       riesgoPropPerdidaBeneficio.riesgoPropiedad:
+#         $ref: "#/definitions/riesgoPropPerdidaBeneficio.riesgoPropiedad"
+      riesgoPropPerdidaBeneficioRiesgoPolitico:
+        $ref: "#/definitions/riesgoPropPerdidaBeneficioRiesgoPolitico"
+      listDeterEscenarioPerdida:
+        $ref: "#/definitions/listDeterEscenarioPerdida"
+      listaEntrevistados:
+        $ref: "#/definitions/listaEntrevistados"
+      descripcionInterna:
+        $ref: "#/definitions/descripcionInterna"
+      actividadDesarrollada:
+        $ref: "#/definitions/actividadDesarrollada"
+      almacenes:
+        $ref: "#/definitions/almacenes"
+      incendioDeteccionIncendio:
+        $ref: "#/definitions/incendioDeteccionIncendio"
+      incendioSistemaContraIndendioNFPA72:
+        $ref: "#/definitions/incendioSistemaContraIndendioNFPA72"
+      incendioSistemaContraIndendioNFPA:
+        $ref: "#/definitions/incendioSistemaContraIndendioNFPA"
+      ramosDetalleMaquina:
+        $ref: "#/definitions/ramosDetalleMaquina"
+      ramosCodRamos:
+        $ref: "#/definitions/ramosCodRamos"
+      ramosServiciosGenerales:
+        $ref: "#/definitions/ramosServiciosGenerales"
+      ramosGestionActivos:
+        $ref: "#/definitions/ramosGestionActivos"
+      roboAsaltoCodRoboAsalto:
+        $ref: "#/definitions/roboAsaltoCodRoboAsalto"
+      roboAsaltoAccesoPrevio:
+        $ref: "#/definitions/roboAsaltoAccesoPrevio"
+      roboAsaltoProteccionContraRobo:
+        $ref: "#/definitions/roboAsaltoProteccionContraRobo"
+      roboAsaltoPoliticaManejoValores:
+        $ref: "#/definitions/roboAsaltoPoliticaManejoValores"
+      listSiniestroSiniestro:
+        $ref: "#/definitions/listSiniestroSiniestro"
+
+  datosNivelRiesgo:
+    type: object
+    properties:
+      direccion:
+        type: string
+      fechaInspeccion:
+        type: string
+      horaInspeccion:
+        type: string
+
+  Archivo:
+    type: object
+    properties:
+      codArchivo:
+        type: string
+      tipoArchivo:
+        type: String
+      nomArchivo:
+        type: string
+      comentario:
+        type: string 
+      eliminado:
+        type: boolean
+
+  datosGenerales:
+    type: object
+    properties:
+      razonSocial:
+        type: string
+      actividadLocal:
+        type: string
+
+  informacionSBS:
+    type: object
+    properties:
+      numeroPisos:
+        type: integer
+      numeroSotanos:
+        type: integer
+      codTipoEstructura:
+        type: integer
+      codTipoUso:
+        type: integer
+      coordLatitud:
+        type: float
+      coordLongitud:
+        type: float
+
+  valoresDeclarados:
+    type: object
+    properties:
+      montoContenido:
+        type: float
+      montoEdificacion:
+        type: float
+      montoMaquinaria:
+        type: float
+      montoExistencias:
+        type: float
+      montoLucroCesante:
+        type: float
+      total:
+        type: float
+
+  evalRiesgoPerdida:
+    type: object
+    properties:
+      coordenadaMatriz:
+        type: float
+      valorMatriz:
+        type: float
+
+  riesgoPropPerdidaBeneficioRiesgoPolitico:
+    type: object
+    properties:
+      huelgaCc:
+        type: string
+
+  listArchivo: 
+    type: array
+    items:
+      $ref: '#/definitions/Archivo'
+
+#   listArchivo.archivo: 
+#     type: array
+#     items:
+#       $ref: '#/definitions/Archivo'
+
+
+#   riesgoPropPerdidaBeneficioRiesgoPropiedad:
+#       codRiesgo:
+#         type: string
+#       incendio:
+#         type: string
+#       roturaMaquina:
+#         type: string
+#       robo3D:
+#         type: string
+#       perdidaBeneficio:
+#         type: string
+
+
+
+  listDeterEscenarioPerdida: 
+    type: array
+    items:
+      $ref: '#/definitions/Perdida'
+
+  Perdida:
+    type: object
+    properties:
+      id:
+        type: string
+      escenario:
+        type: String
+      afectacion:
+        type: string
+
+  perdidaMaximaProbable:
+    type: object
+    properties:
+      pml:
+        type: string
+      eml:
+        type: string
+
+  estCunplGarantiaDadaPoliza:
+    type: object
+    properties:
+      garantia:
+        type: string
+      estatus:
+        type: string
+      justificacion:
+        type: string
+
+  listaEntrevistados:
+    type: array
+    items:
+      $ref: '#/definitions/entrevistado'
+
+  entrevistado:
+    type: object
+    properties:
+      codEntrevistado:
+        type: string
+      nombreEntrevistado:
+        type: String
+      cargo:
+        type: string
+      correo:
+        type: string
+      telefono:
+        type: string
+
+  descripcionInterna:  
+    type: object
+    properties:
+      descripcion:
+        type: string
+      latitud:
+        type: float
+      longitud:
+        type: float
+      separacionRiesgo:
+        type: String
+
+  entorno:  
+    type: object
+    properties:
+      colindantes:
+        type: string
+      naturaleza:
+        type: string
+
+  actividadDesarrollada:
+    type: object
+    properties:
+      codActividad:
+        type: string
+      descripcion:
+        type: string
+      personal:
+        type: string
+
+  almacenes:
+    type: object
+    properties:
+      codAlmacenamiento:
+        type: string
+      descripcion:
+        type: string
+      personal:
+        type: string
+      edificacion:
+        type: string
+      nombreAlmacen:
+        type: string
+      mercaderiaAlmacenada:
+        type: string
+      caracteristicasAlm:
+        type: string
+      inventarios:
+        type: string
+
+  incendioDeteccionIncendio:
+    type: object
+    properties:
+      codIncendio:
+        type: string
+      procPropioPlanSeg:
+        type: string
+      brigadaIncendio:
+        type: string
+      distribucionExtintores:
+        type: string
+      codBombero:
+        type: string
+
+  incendioSistemaContraIndendioNFPA72:
+    type: object
+    properties:
+      descripcion:
+        type: string
+
+  incendioSistemaContraIndendioNFPA:
+    type: object
+    properties:
+      descripcion:
+        type: string
+
+  ramosDetalleMaquina:
+    type: object
+    properties:
+      descripcion:
+        type: string
+
+  ramosCodRamos:
+    type: string
+
+  ramosServiciosGenerales:
+    type: object
+    properties:
+      aguaDesague:
+        type: string
+      electricidad:
+        type: string
+      airecomprimido:
+        type: string
+      calorVapor:
+        type: string
+      combustibles:
+        type: string
+      pozoTierra:
+        type: string
+      sistemaFrio:
+        type: string
+      otrosServicios:
+        type: string
+      
+  ramosGestionActivos:
+    type: object
+    properties:
+      planMtto:
+        type: string
+      repuestos:
+        type: string
+
+  roboAsaltoCodRoboAsalto:
+    type: string
+
+  roboAsaltoAccesoPrevio:
+    type: object
+    properties:
+      repuestos:
+        type: string
+      accesos:
+        type: string
+      perimetro:
+        type: string
+
+  roboAsaltoProteccionContraRobo:
+    type: object
+    properties:
+      vigilanciaGuardiania:
+        type: string
+      alarmasIntrucion:
+        type: string
+      sistemaCCTV:
+        type: string           
+
+  roboAsaltoPoliticaManejoValores:
+    type: object
+    properties:
+      descripcion:
+        type: string
+
+  listSiniestroSiniestro:
+    type: array
+    items:
+      $ref: '#/definitions/siniestro'
+
+  siniestro:
+    type: object
+    properties:
+      codSiniestro:
+        type: string
+      fecha:
+        type: string
+      descripcion:
+        type: string
+      tiempoParalizacion:
+        type: string
+
+  listEnlace: 
+    type: array
+    items:
+      $ref: '#/definitions/Enlace'
+
+  Enlace:
+    type: object
+    properties:
+      codEnlace:
+        type: string
+      nomEnlace:
+        type: string
+      eliminado:
+        type: boolean
+
+  Empty:
+    type: "object"
+    title: "Empty Schema"

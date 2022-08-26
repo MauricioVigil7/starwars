@@ -1,0 +1,43 @@
+# AWSTemplateFormatVersion: '2010-09-09'
+# Transform: 'AWS::Serverless-2016-10-31'
+# Description: An AWS Serverless Specification template describing your function.
+# Resources:
+#   InspRiesgoAccessTokenJWT:
+#     Type: 'AWS::Serverless::Function'
+#     Properties:
+#       Handler: handler.token
+#       Runtime: nodejs14.x
+#       CodeUri: .
+#       Description: ''
+#       MemorySize: 128
+#       Timeout: 60
+#       Role: >-
+#         arn:aws:iam::486520098236:role/service-role/InspRiesgoAccessTokenJWT-role-lr5ifjw7
+#       Events:
+#         Api1:
+#           Type: Api
+#           Properties:
+#             Path: /InspRiesgoAccessTokenJWT/refresh-token
+#             Method: POST
+#         Api2:
+#           Type: Api
+#           Properties:
+#             Path: /InspRiesgoAccessTokenJWT/check-token
+#             Method: POST
+#         Api3:
+#           Type: Api
+#           Properties:
+#             Path: /InspRiesgoAccessTokenJWT/token
+#             Method: POST
+#         Api4:
+#           Type: Api
+#           Properties:
+#             Path: /MyResource
+#             Method: ANY
+#       Environment:
+#         Variables:
+#           AUTH_BASE_PATH: /InspRiesgoAccessTokenJWT
+#           INSPECCIONES_TABLE: Inspeccion
+#           SM_SECRETID: JWTTOKEN
+#           TOKEN_EXPIRE_TIME: 60m
+#           TOKEN_TABLE: tw-token-detail

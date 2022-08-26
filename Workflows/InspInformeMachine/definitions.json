@@ -1,0 +1,84 @@
+{
+    "Comment": "Workflow Generación de Informe",
+    "StartAt": "Generar Informe",
+    "States": {
+        "Generar Informe": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_GENERAR_INFORME}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "States.TaskFailed"
+                    ],
+                    "IntervalSeconds": 15,
+                    "MaxAttempts": 3,
+                    "BackoffRate": 1.5
+                }
+            ],
+            "ResultPath": null,
+            "Next": "Envio Informe"
+        },
+        "Envio Informe": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_ENVIO_INFORME}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "States.TaskFailed"
+                    ],
+                    "IntervalSeconds": 300,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 1.5
+                }
+            ],
+            "Catch": [
+                {
+                    "ErrorEquals": [ "States.ALL" ],
+                    "ResultPath": "$.error",
+                    "Next": "Notificar Error"
+                }
+            ],
+            "ResultPath": null,
+            "Next": "Notificar Exito"
+        },
+        "Notificar Exito": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_NOTIFICAR}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite",
+                    "function": "InspInforme",
+                    "exito": true
+                }
+            },
+            "End": true
+        },
+        "Notificar Error": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${FUNCTION_NOTIFICAR}",
+                "Payload": {
+                    "num_tramite.$": "$.num_tramite",
+                    "function": "InspInforme",
+                    "exito": false,
+                    "error.$": "$.error"
+                }
+            },
+            "End": true
+        }
+    }
+}

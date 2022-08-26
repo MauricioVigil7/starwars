@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Parameters:
+  Environment:
+    Type: String
+    Description: Valor del entorno
+    Default: dev
+  TablaClaveTempHist:
+    Type: String
+    Description: Nombre de la tabla de TablaClaveTempHist
+  TablaClaveTemp:
+    Type: String
+    Description: Nombre de la tabla TablaClaveTemp    
+
+Resources:
+
+  InspRiesgoGeneraClaveDinamicaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - ""
+        - - InspRiesgoGeneraClaveDinamicaRole
+          - !Ref Environment
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "secretsmanager.amazonaws.com"
+                - "apigateway.amazonaws.com"
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "Lambda"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"        
+        - PolicyName: "DynamoCRUD"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                  - dynamodb:DescribeTable
+                  - dynamodb:ConditionCheckItem
+                Resource: '*'        
+        - PolicyName: "Secret"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "secretsmanager:*"
+                Resource: '*'
+        - PolicyName: "CWL"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                  - logs:PutDestination
+                  - logs:PutLogEvents
+                  - logs:PutQueryDefinition
+                  - logs:UpdateLogDelivery
+                Resource: '*'    
+
+  InspRiesgoGeneraClaveDinamicaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - ""
+        - - InspRiesgoGeneraClaveDinamica
+          - "-"
+          - !Ref Environment
+      Description: Permite cargar, descargar y eliminar los archivos
+      CodeUri: ../../Functions/InspRiesgoGeneraClaveDinamica/
+      Handler: handler.generarClave
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 60
+      Role: !GetAtt InspRiesgoGeneraClaveDinamicaRole.Arn
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+          ENVIRONMENT: !Ref Environment
+          CLAVETEMPHIST_TABLE: !Ref TablaClaveTempHist
+          CLAVETEMP_TABLE: !Ref TablaClaveTemp
+
+Outputs:
+  # InspRiesgoGeneraClaveDinamicaApi:
+  #   Description: ARN de la API InspRiesgoGeneraClaveDinamicaApi
+  #   Value: !Ref InspRiesgoGeneraClaveDinamicaApi
+    
+  InspRiesgoGeneraClaveDinamicaRole:
+    Description: Arn de Role InspRiesgoGeneraClaveDinamicaRole
+    Value: !GetAtt InspRiesgoGeneraClaveDinamicaRole.Arn
+
+  InspRiesgoGeneraClaveDinamicaFunction:
+    Description: Arn de la Funcion InspRiesgoGeneraClaveDinamicaFunction
+    Value: !GetAtt InspRiesgoGeneraClaveDinamicaFunction.Arn

@@ -1,0 +1,443 @@
+swagger: "2.0"
+info:
+  description: "Permite gestionar los archivos subidos al servicio de repositorios S3 Bucket AWS. Cargar, eliminar y descargar archivo y mantener información en la base datos DynamoDB"
+  version: "v1.0"
+  title: "Servicio Cloud para gestionar los archivos subidos al servicio de repositorios S3 Bucket AWS. Cargar, eliminar y descargar archivo y mantener información en la base datos DynamoDB"
+  contact: 
+    email: "soporte@mapfre.com.pe"    
+  license: 
+      name: "Apache 2.0"
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"    
+
+schemes:
+- "https"
+
+x-amazon-apigateway-request-validators:
+  body-validate:
+    validateRequestBody: false
+    validateRequestParameters: false
+
+x-amazon-apigateway-gateway-responses:
+  ACCESS_DENIED:
+    statusCode: 403
+    responseTemplates:
+      application/json: " \n
+          { \n
+            \"exito\": false,
+            \"mensaje\": \"Error en la operación\",
+            \"data\": \"\",
+            \"errores\": [
+              {
+                \"codigo\": \"1\",
+                \"mensaje\": \"Error de validación de token, u acceso\"
+              }
+            ]
+          }"
+
+  UNAUTHORIZED:
+    statusCode: 401
+    responseTemplates:
+      application/json: " \n
+          { \n
+            \"exito\": false,
+            \"mensaje\": \"Error en el autorización\",
+            \"data\": \"\",
+            \"errores\":$context.error.messageString
+          }"
+
+securityDefinitions:
+  autorizador:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+    x-amazon-apigateway-authorizer:
+      authorizerUri:
+        Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaToken}/invocations"
+      authorizerCredentials:
+        Fn::GetAtt: "InspRiesgoEnvioArchivosRole.Arn"
+      authorizerResultTtlInSeconds: 300
+      type: "token"
+x-amazon-apigateway-request-validator: body-validate
+
+paths:
+  /:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+
+  /InspRiesgoEnvioArchivos/cargar:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+    post:
+      tags: 
+        - InspRiesgoEnvioArchivos-cloud-service-handler      
+      summary: "Permite Cargar archivos y devolver información de carga"
+      operationId: "cargar"
+      description: "Cargar archivos y devolver información de carga \n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      x-amazon-apigateway-request-validator: body-validate
+      parameters:
+        - name: cargar
+          in: body
+          description: "cargar"
+          required: true
+          schema:
+            $ref: "#/definitions/cargar"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoEnvioArchivosRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoEnvioArchivosFunction.Arn}/invocations"          
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+             \"action\": \"cargar\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } \n
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"    
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+  /InspRiesgoEnvioArchivos/obtener:
+    options:
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+    post:
+      tags: 
+        - InspRiesgoEnvioArchivos-cloud-service-handler      
+      summary: "Permite descargar el archivo en binario con información importante del recurso descargado desde S3"
+      operationId: "obtener"
+      description: "Permite descargar el archivo en binario con información importante del recurso descargado desde S3 \n" 
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: obtener
+          in: body
+          description: "Parametro codTramite"
+          required: true
+          schema:
+            $ref: "#/definitions/obtener"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoEnvioArchivosRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoEnvioArchivosFunction.Arn}/invocations"          
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+          #set($allParams = $input.params()) \n
+          #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"obtener\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } \n
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"    
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+  /InspRiesgoEnvioArchivos/eliminar:
+    options:
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+                type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+    post:
+      tags:
+        - InspRiesgoEnvioArchivos-cloud-service-handler      
+      summary: "Permite Eliminar archivos por el código de archivo, nombre de archivo y ruta"
+      operationId: "eliminar"
+      description: "Permite Eliminar archivos por el código de archivo, nombre de archivo y ruta \n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: eliminar
+          in: body
+          description: "parametro codTramite"
+          schema:
+            $ref: "#/definitions/eliminar"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "InspRiesgoEnvioArchivosRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InspRiesgoEnvioArchivosFunction.Arn}/invocations"          
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " \n
+              #set($allParams = $input.params()) \n
+              #set($inputRoot = $input.json('$')) \n
+              {
+                \"action\": \"eliminar\", \n
+                \"params\" : { \n
+                  #foreach($type in $allParams.keySet()) \n
+                  #set($params = $allParams.get($type)) \n
+                  \"$type\" : { \n
+                    #foreach($paramName in $params.keySet()) \n
+                    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                    #if($foreach.hasNext),#end \n
+                    #end \n
+                  } \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                }, \n
+                \"data\": $inputRoot \n
+              }"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"    
+        401:
+          description: "Error de authenticación"
+        500:
+          description: "Error en el servidor"
+
+definitions:
+  cargar:
+    type: object
+    required:
+      - codTramite
+      - nombreArchivo
+      - extensionArchivo
+      - archivo
+    properties:
+      codTramite:
+        type: string
+      nombreArchivo:
+        type: string
+      extensionArchivo:
+        type: string
+      archivo:
+        type: string
+
+  obtener:
+    type: object
+    required:
+      - codTramite
+      - codArchivo
+      - nombreArchivo
+    properties:
+      codTramite:
+        type: string
+      codArchivo:
+        type: string
+      nombreArchivo:
+        type: string
+
+  eliminar:
+    type: object
+    required:
+      - codTramite
+      - codArchivo
+      - nombreArchivo
+    properties:
+      codTramite:
+        type: string
+      codArchivo:
+        type: string
+      nombreArchivo:
+        type: string
+
+  Empty:
+    type: "object"
+    title: "Empty Schema"

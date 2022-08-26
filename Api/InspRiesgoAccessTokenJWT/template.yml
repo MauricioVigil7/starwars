@@ -1,0 +1,40 @@
+# AWSTemplateFormatVersion: '2010-09-09'
+# Transform: AWS::Serverless-2016-10-31
+# Description: Plantilla para crear los recursos del proyecto de Inspeccion de Riesgos
+
+# Parameters:
+  # Environment:
+  #   Type: String
+  #   Description: Valor del entorno
+  #   Default: dev
+  # LambdaInspRiesgoAccessTokenJWTArn:
+  #   Type: String
+  #   Description: ARN de la funcion lambda InspRiesgoAccessTokenJWT
+  # ApiRole:
+  #   Type: String
+  #   Description: ARN del API Role
+  
+# Resources:
+
+#   ApiInspRiesgoAccessTokenJWT:
+#     Type: AWS::Serverless::Api
+#     Properties:
+#       Name: !Join 
+#         - "" 
+#         - - InspRiesgoAccessTokenJWT
+#           - "-"
+#           - !Ref Environment
+#       StageName: !Ref Environment
+#       DefinitionBody:
+#         Fn::Transform:
+#           Name: AWS::Include
+#           Parameters:
+#             Location: ../../Api/InspRiesgoAccessTokenJWT/definitions.yml
+
+# Outputs:
+#   ApiInspRiesgoAccessTokenJWT:
+#     Description: ARN de la API
+#     Value: !Ref ApiInspRiesgoAccessTokenJWT
+
+  
+  

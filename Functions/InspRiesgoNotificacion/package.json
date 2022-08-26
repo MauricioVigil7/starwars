@@ -1,0 +1,13 @@
+{
+  "name": "Notificacion",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "aws-sdk": "^2.1028.0",
+    "generate-password": "^1.7.0"
+  },
+  "devDependencies": {
+    "serverless-dynamodb-local": "^0.2.40",
+    "serverless-offline": "^8.2.0"
+  }
+}

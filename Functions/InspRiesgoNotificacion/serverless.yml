@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Plantilla para crear los recursos de la función de InspRiesgoParametroComun
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Valor del entorno
+    Default: dev
+
+Resources:
+  InspRiesgoNotificacionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - ""
+        - - InspRiesgoNotificacionRole
+          - !Ref Environment
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "Lambda"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+        - PolicyName: "DynamoCRUD"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource: '*'
+        - PolicyName: Secret
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: '*'
+        - PolicyName: CWL
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                  - logs:PutDestination
+                  - logs:PutLogEvents
+                  - logs:PutQueryDefinition
+                  - logs:UpdateLogDelivery
+                Resource: '*'   
+
+  InspRiesgoNotificacionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - ""
+        - - InspRiesgoNotificacion
+          - "-"
+          - !Ref Environment
+      Description: Funcion para obtener el token
+      CodeUri: ../../Functions/InspRiesgoNotificacion/
+      Handler: handler.excecute
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 30
+      Role: !GetAtt InspRiesgoNotificacionRole.Arn
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+          INSPECCIONES_TABLE: Inspeccion
+          MENSAJEMAIL_TABLE: MensajeMail
+          CORREOELECTRONICO_TABLE: CorreoElectronico
+          SM_SECRETID: credencialesWrsUtil
+          IS_SECRETMANAGER: true
+          API_HOST_MAPFRE: api.pre.mapfre.com.pe
+          API_PATH_LOGIN: /app/commonServices/api/v1.0/login
+          API_PATH_WSRUTILES_MAIL: /app/commonServices/api/v1.0/common/email
+
+Outputs:    
+  InspRiesgoNotificacionRole:
+    Description: Arn  de Role
+    Value: !GetAtt InspRiesgoNotificacionRole.Arn
+
+  InspRiesgoNotificacionFunction:
+    Description: Arn de la Funcion InspRiesgoNotificacion
+    Value: !GetAtt InspRiesgoNotificacionFunction.Arn

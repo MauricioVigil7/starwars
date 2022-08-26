@@ -1,0 +1,9 @@
+{
+  "name": "InspRiesgoAccessTokenJWT",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "aws-sdk": "^2.1028.0",
+    "jsonwebtoken": "^8.5.1"
+  }
+}

@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Plantilla para crear los recursos de la función de token
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Valor del entorno
+    Default: dev
+  TablaInspeccion:
+    Type: String
+    Description: Nombre de la tabla de inspeccion    
+  TablaDatosTramite:
+    Type: String
+    Description: Nombre de la tabla datos tramite
+  TablaGrupoRamos:
+    Type: String
+    Description: Nombre de la tabla grupo ramos
+  TablaContactoCliente:
+    Type: String
+    Description: Nombre de la tabla contacto cliente
+  TablaContactoCliente:
+    Type: String
+    Description: Nombre de la tabla contacto cliente
+  TablaValoresDeclarados:
+    Type: String
+    Description: Nombre de la tabla valores declarados
+  LambdaToken:
+    Type: String
+    Description: ARN de la Lambda del token
+
+Resources:
+
+  InspRiesgoRegistroSolicitudApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Join
+        - ""
+        - - InspRiesgoRegistroSolicitud
+          - "-"
+          - !Ref Environment
+      StageName: !Ref Environment
+      DefinitionBody:
+        Fn::Transform:
+            Name: AWS::Include
+            Parameters:
+              Location: ../../Api/InspRiesgoRegistroSolicitud/definitions.yml
+
+  InspRiesgoRegistroSolicitudRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - ""
+        - - InspRiesgoRegistroSolicitudRole
+          - !Ref Environment
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "apigateway.amazonaws.com"              
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "Lambda"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"    
+        - PolicyName: "DynamoCRUD"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                  - dynamodb:DescribeTable
+                  - dynamodb:ConditionCheckItem
+                Resource: '*'        
+        - PolicyName: "CWL"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                  - logs:PutDestination
+                  - logs:PutLogEvents
+                  - logs:PutQueryDefinition
+                  - logs:UpdateLogDelivery
+                Resource: '*'    
+
+  InspRiesgoRegistroSolicitudFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - ""
+        - - InspRiesgoRegistroSolicitud
+          - "-"
+          - !Ref Environment
+      Description: Funcion para las operaciones del Registro de Solicitud
+      CodeUri: ../../Functions/InspRiesgoRegistroSolicitud/
+      Handler: handler.solicitud
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 60
+      Role: !GetAtt InspRiesgoRegistroSolicitudRole.Arn
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+          DATOS_TRAMITE_TABLE: !Ref TablaDatosTramite
+          GRUPO_RAMOS_TABLE: !Ref TablaGrupoRamos
+          CONTACTO_CLIENTE_TABLE: !Ref TablaContactoCliente
+          VALORES_DECLARADOS_TABLE: !Ref TablaValoresDeclarados
+          #IS_OFFLINE: false
+
+Outputs:
+
+  InspRiesgoRegistroSolicitudApi:
+    Description: ARN de la API InspRiesgoRegistroSolicitudApi
+    Value: !Ref InspRiesgoRegistroSolicitudApi
+    
+  InspRiesgoRegistroSolicitudRole:
+    Description: Arn de Role InspRiesgoRegistroSolicitudRole
+    Value: !GetAtt InspRiesgoRegistroSolicitudRole.Arn
+
+  InspRiesgoRegistroSolicitudFunction:
+    Description: Arn de la Funcion InspRiesgoRegistroSolicitudFunction
+    Value: !GetAtt InspRiesgoRegistroSolicitudFunction.Arn

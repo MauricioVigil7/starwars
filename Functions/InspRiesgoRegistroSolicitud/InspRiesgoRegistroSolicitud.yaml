@@ -1,0 +1,28 @@
+# AWSTemplateFormatVersion: '2010-09-09'
+# Transform: 'AWS::Serverless-2016-10-31'
+# Description: An AWS Serverless Specification template describing your function.
+# Resources:
+#   InspRiesgoRegistroSolicitud:
+#     Type: 'AWS::Serverless::Function'
+#     Properties:
+#       Handler: handler.solicitud
+#       Runtime: nodejs14.x
+#       CodeUri: .
+#       Description: ''
+#       MemorySize: 128
+#       Timeout: 60
+#       Role: >-
+#         arn:aws:iam::486520098236:role/service-role/InspRiesgoRegistroSolicitud-role-5pbdag4y
+#       Events:
+#         Api1:
+#           Type: Api
+#           Properties:
+#             Path: /InspRiesgoRegistroSolicitud/registrar
+#             Method: POST
+#       Environment:
+#         Variables:
+#           AUTH_BASE_PATH: /InspRiesgoRegistroSolicitud
+#           CONTACTO_CLIENTE_TABLE: ContactoCliente
+#           DATOS_TRAMITE_TABLE: Inspeccion
+#           GRUPO_RAMOS_TABLE: Ramos
+#           VALORES_DECLARADOS_TABLE: ValoresDeclarados

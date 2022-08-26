@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Plantilla para crear los recursos de la función de informe construccion
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Valor del entorno
+    Default: dev
+  LambdaToken:
+    Type: String
+    Description: ARN de la Lambda del token
+    Default: "abc"
+  LambdaInspRiesgoNotificacion:
+    Type: String
+    Description: ARN de la funcion lambda InspRiesgoNotificacion
+  LambdaInspRiesgoInformeGeneral:
+    Type: String
+    Description: ARN de la lamnbda InspRiesgoInformeGeneral
+  LambdaInspRiesgoEnvioInforme:
+    Type: String
+    Description: ARN de la lambda inspRiesgoEnvioInforme
+  LambdaInspRiesgoEnvioArchivos:
+    Type: String
+    Description: ARN de la lambda inspRiesgoEnvioArchivos
+  LambdaInspRiesgoGeoReferenciacion:
+    Type: String
+    Description: ARN de la lambda InspRiesgoGeoReferenciacion
+  LambdaInspRiesgoListaSolicitud:
+    Type: String
+    Description: ARN de la lambda InspRiesgoListaSolicitud
+  LambdaInspRiesgoParametroComun:
+    Type: String
+    Description: ARN de la lambda InspRiesgoParametroComun
+  LambdaInspCheckListEmpresarial:
+    Type: String
+    Description: ARN de la lambda InspCheckListEmpresarial
+  LambdaInspRiesgoGeneraClaveDinamica:
+    Type: String
+    Description: ARN de InspRiesgoGeneraClaveDinamica
+  LambdaInspRiesgoGeneraInforme:
+    Type: String
+    Description: ARN de InspRiesgoGeneraInforme
+  LambdaInspeccionSolicitud:
+    Type: String
+    Description: ARN de InspeccionSolicitud
+  LambdaNotificar:
+    Type: String
+    Description: ARN de Notificar
+  TablaInspeccion:
+    Type: String
+    Description: Nombre de la tabla de inspeccion
+  TablaDetalle:
+    Type: String
+    Description: Nombre de la tabla detalle
+  TablaSiniestro:
+    Type: String
+    Description: Nombre de la tabla siniestro
+  TablaArchivo:
+    Type: String
+    Description: Nombre ed la tabla Archivo
+  TablaEnlace:
+    Type: String
+    Description: Nombre de la tabla Enlace
+  BucketTemplate:
+    Type: String
+    Description: Nombre del bucket donde está el template
+  KeyTemplate:
+    Type: String
+    Description: Ruta del template dentro del bucket
+  TablaDatosTramite:
+    Type: String
+    Description: Nombre de la tabla datos tramite
+  TablaGrupoRamos:
+    Type: String
+    Description: Nombre de la tabla grupo ramos
+  TablaContactoCliente:
+    Type: String
+    Description: Nombre de la tabla contacto cliente
+  TablaValoresDeclarados:
+    Type: String
+    Description: Nombre de la tabla valores declarados
+  TablaPerdida:
+    Type: String
+    Description: Nombre de la tabla Perdida
+  TablaClaveTemp:
+    Type: String
+    Description: Nombre de la tabla Perdida
+  TablaClaveTempHist:
+    Type: String
+    Description: Nombre de la tabla Perdida
+
+Resources:
+
+  InspRiesgoInformeConstruccionApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Join
+        - ""
+        - - InspRiesgoInformeConstruccion
+          - "-"
+          - !Ref Environment
+      StageName: !Ref Environment
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ../../Api/InspRiesgoInformeConstruccion/definitions.yml
+
+  InspRiesgoInformeConstruccionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - ""
+        - - InspRiesgoInformeConstruccionRole
+          - !Ref Environment
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - "apigateway.amazonaws.com"
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "Lambda"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"          
+                Resource: "*"
+        - PolicyName: DynamoCRUD
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                  - dynamodb:DescribeTable
+                  - dynamodb:ConditionCheckItem
+                Resource: '*'        
+        - PolicyName: S3
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetBucketAcl"
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetObject"
+                  - "s3:GetObjectAcl"
+                Resource: '*'
+        - PolicyName: CWL
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:GetLogEvents
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                  - logs:PutDestination
+                  - logs:PutLogEvents
+                  - logs:PutQueryDefinition
+                  - logs:UpdateLogDelivery
+                Resource: '*'   
+
+  InspRiesgoInformeConstruccionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - ""
+        - - InspRiesgoInformeConstruccion
+          - "-"
+          - !Ref Environment
+      Description: Funcion para registrar, actualizar y listar informe construccion
+      CodeUri: ../../Functions/InspRiesgoInformeConstruccion/
+      Handler: handler.informe
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 30
+      Role: !GetAtt InspRiesgoInformeConstruccionRole.Arn
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+          ENVIRONMENT: !Ref Environment
+          TABLE_ARCHIVO: Archivo
+          TABLE_INSPECCION: Inspeccion
+          TABLE_DETALLE: Riesgo
+          ENTREVISTADO_TABLE: Entrevistado
+          IND_DEL: '0'
+          TABLE_SINIESTRO: Siniestro
+          TABLE_ENLACE: Enlace
+          PERDIDA_TABLE: Perdida
+
+Outputs:
+  InspRiesgoInformeConstruccionRole:
+    Description: Arn  de Role
+    Value: !GetAtt InspRiesgoInformeConstruccionRole.Arn
+
+  InspRiesgoInformeConstruccionFunction:
+    Description: Arn de la Funcion
+    Value: !GetAtt InspRiesgoInformeConstruccionFunction.Arn
+
+  InspRiesgoInformeConstruccionApi:
+    Description: Arn  de la API
+    Value: !Ref InspRiesgoInformeConstruccionApi
+ 

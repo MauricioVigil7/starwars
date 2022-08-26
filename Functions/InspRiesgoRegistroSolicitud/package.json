@@ -1,9 +1,0 @@
-{
-  "name": "InspRiesgoRegistroSolicitud",
-  "version": "1.0.0",
-  "description": "",
-  "dependencies": {
-    "aws-sdk": "^2.1028.0",
-    "uuid": "^8.3.2"
-  }
-}

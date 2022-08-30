@@ -1,0 +1,6 @@
+projectKey=InspRiesgoInformeConstruccion
+serverUrl=http://localhost:9000
+serverVersion=9.2.4.50792
+dashboardUrl=http://localhost:9000/dashboard?id=InspRiesgoInformeConstruccion
+ceTaskId=AX_s7ceeNgfz4jhLQBJI
+ceTaskUrl=http://localhost:9000/api/ce/task?id=AX_s7ceeNgfz4jhLQBJI

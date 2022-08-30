@@ -1,0 +1,383 @@
+swagger: "2.0"
+info:
+  description: "Permite el registro de naves estelares"
+  version: "v1.0"
+  title: "Star Wars"
+  contact: 
+    email: "mauvigil@gmail.com"    
+  license: 
+      name: "Apache 2.0"
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"    
+
+schemes:
+- "https"
+
+paths:
+  /:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_match"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        type: "mock"
+  /StarShips:
+    options:
+        consumes:
+        - "application/json"
+        produces:
+        - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+          
+  /StarShips/in:
+    options:
+        consumes:
+        - "application/json"
+        produces:
+        - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'PUT,GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+    post:
+      tags: 
+        - StarShips      
+      summary: "actualizar datos del informe de inspeccion de riesgos"
+      operationId: "insertPaso"
+      description: "Permite actualizar los datos de informe de inspección de riesgo del paso 4\n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: paso
+          in: path
+          description: "paso"
+          required: true
+          type: string
+          schema:
+            $ref: "#/definitions/Inspeccion"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "StarShipsRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StarShipsFunction.Arn}/invocations"
+        responses:
+          "default":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                $root.body"               
+          "BAD.*":
+            statusCode: "400"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Token\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"1\",
+                    \"mensaje\": \"No se reconoce token\"
+                  }]
+                }"           
+          "INT.*":
+            statusCode: "500"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: " \n
+                #set ($root=$util.parseJson($input.json('$'))) \n
+                #set ($body = $util.parseJson($root.body)) \n
+                { \n
+                  \"exito\": false, \n
+                  \"mensaje\": \"Error Interno\", \n
+                  \"data\": [],
+                  \"errores\":[{
+                    \"codigo\": \"-1\",
+                    \"mensaje\": \"Error Interno\"
+                  }]
+                }"                                
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+          application/json: " #set($allParams = $input.params()) \n
+           #set($inputRoot = $input.json('$')) \n
+           {
+              \"action\": \"insertPaso\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { \n
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" \n
+                  #if($foreach.hasNext),#end \n
+                  #end \n
+                } 
+                #if($foreach.hasNext),#end \n
+                #end \n
+              }, \n
+              \"data\": $inputRoot \n
+            }
+            "
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        401:
+          description: "Error de authenticación"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        500:
+          description: "Error en el servidor"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+
+   
+  /StarShips/gt/{id}/{nombre}/{modelo}:
+    options:
+        parameters:
+        - name: id
+          in: path
+          description: "id"
+          required: false
+          type: string
+        - name: nombre
+          in: path
+          description: "nombre"
+          required: false
+          type: string
+        - name: modelo
+          in: path
+          description: "modelo"
+          required: false
+          type: string
+        consumes:
+        - "application/json"
+        produces:
+        - "application/json"
+        responses:
+          200:
+            description: "200 response"
+            schema:
+              $ref: "#/definitions/Empty"
+            headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        x-amazon-apigateway-integration:
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+          passthroughBehavior: "when_no_match"
+          requestTemplates:
+            application/json: "{\"statusCode\": 200}"
+          type: "mock"
+    get:
+      tags: 
+        - auto-StarShips-cloud-service-handler      
+      summary: "permite listar naves especiales"
+      operationId: "getPaso"
+      description: "permite listar naves espaciaes\n"
+      security:
+        - autorizador: []   
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: id
+          in: path
+          description: "id"
+          required: false
+          type: string
+        - name: nombre
+          in: path
+          description: "nombre"
+          required: false
+          type: string
+        - name: modelo
+          in: path
+          description: "modelo"
+          required: false
+          type: string
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: "StarShipsRole.Arn"
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StarShipsFunction.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        requestTemplates:
+           application/json: " #set($allParams = $input.params()) 
+          #set($inputRoot = $input.json('$')) 
+           { 
+              \"action\": \"getPaso\", \n
+              \"params\" : { \n
+                #foreach($type in $allParams.keySet()) \n
+                #set($params = $allParams.get($type)) \n
+                \"$type\" : { 
+                  #foreach($paramName in $params.keySet()) \n
+                  \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" 
+                  #if($foreach.hasNext),#end \n
+                  #end 
+                } 
+                #if($foreach.hasNext),#end 
+                #end 
+              }, \n
+              \"data\": $inputRoot \n
+            }
+            "
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+      responses:
+        200:
+          description: "Operación exitosa"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        401:
+          description: "Error de authenticación"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+        500:
+          description: "Error en el servidor"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+              Access-Control-Allow-Origin:
+                type: "string"
+              Access-Control-Allow-Methods:
+                type: "string"
+              Access-Control-Allow-Headers:
+                type: "string"
+
+definitions:       
+  Empty:
+    type: "object"
+    title: "Empty Schema"
+  
